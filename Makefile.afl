@@ -1,0 +1,31 @@
+################################################
+###      Compile target.cc and link with AFL ###
+###      to use AFL's persistent mode.       ###
+################################################
+
+CXX=clang++
+AFL_HOME=/home/binzhang/afl-fuzz/
+LIBFUZZER_HOME=/home/binzhang/fuzz/libFuzzer/
+
+STATIC_ASAN_PREINIT_LIB=/usr/local/lib/clang/6.0.0/lib/linux/libclang_rt.asan-preinit-x86_64.a
+STATIC_ASAN_LIB=/usr/local/lib/clang/6.0.0/lib/linux/libclang_rt.asan-x86_64.a
+STATIC_ASAN_CXX_LIB=/usr/local/lib/clang/6.0.0/lib/linux/libclang_rt.asan_cxx-x86_64.a
+LIBFUZZER_LIB=/home/binzhang/fuzz/libFuzzer/libFuzzer.a
+
+CXXFLAGS += -g -fsanitize=address -fsanitize-coverage=trace-pc-guard,trace-cmp,trace-gep,trace-div -c $(shell pkg-config --cflags opencv)
+LDFLAGS += $(shell pkg-config --libs --static opencv)
+LDFLAGS += $(STATIC_ASAN_PREINIT_LIB)
+LDFLAGS += $(STATIC_ASAN_LIB)
+LDFLAGS += $(STATIC_ASAN_CXX_LIB)
+LDFLAGS += $(LIBFUZZER_LIB)
+
+all: afl_driver
+
+afl_driver: example.o
+	$(CXX) $(LIBFUZZER_HOME)/afl/afl_driver.cpp example.o $(AFL_HOME)/llvm_mode/afl-llvm-rt.o.o $(LDFLAGS)
+
+opencv_example: example.o; $(CXX) $< -o $@ $(LDFLAGS)
+
+%.o: %.cpp; $(CXX) $< -o $@ $(CXXFLAGS)
+
+clean: ; rm -f example.o opencv_example
